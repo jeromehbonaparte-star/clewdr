@@ -343,9 +343,10 @@ where
     async fn from_request(req: Request, _: &S) -> Result<Self, Self::Rejection> {
         let anthropic_beta = extract_anthropic_beta_header(req.headers());
         let NormalizeRequest(mut body, format) = NormalizeRequest::from_request(req, &()).await?;
-        // Handle thinking mode by modifying the model name
-        if body.temperature.is_some() {
-            body.top_p = None; // temperature and top_p cannot be used together in Opus-4.x
+        // top_p is deprecated for Opus 4.x models (Anthropic returns
+        // `top_p is deprecated for this model` — invalid_request_error).
+        if body.model.contains("opus-4") {
+            body.top_p = None;
         }
 
         // Check for test messages and respond appropriately
