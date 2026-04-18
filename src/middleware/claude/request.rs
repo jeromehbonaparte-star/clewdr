@@ -277,6 +277,12 @@ where
             body.model = body.model.trim_end_matches("-thinking").to_string();
             body.thinking.get_or_insert(Thinking::new(4096));
         }
+        // top_p is deprecated for Opus 4.x models (Anthropic returns
+        // `top_p is deprecated for this model` — invalid_request_error).
+        // Applied here so both web and code paths drop it.
+        if body.model.contains("opus-4") {
+            body.top_p = None;
+        }
         drop_empty_system(&mut body);
         Ok(Self(body, format))
     }
@@ -343,11 +349,6 @@ where
     async fn from_request(req: Request, _: &S) -> Result<Self, Self::Rejection> {
         let anthropic_beta = extract_anthropic_beta_header(req.headers());
         let NormalizeRequest(mut body, format) = NormalizeRequest::from_request(req, &()).await?;
-        // top_p is deprecated for Opus 4.x models (Anthropic returns
-        // `top_p is deprecated for this model` — invalid_request_error).
-        if body.model.contains("opus-4") {
-            body.top_p = None;
-        }
 
         // Check for test messages and respond appropriately
         if !body.stream.unwrap_or_default()
