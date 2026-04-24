@@ -29,6 +29,10 @@ pub enum OutputEffort {
     Low,
     Medium,
     High,
+    // Marinara (and likely other clients) sends `xhigh` as an
+    // extra-high tier; Anthropic only accepts low/medium/high/max,
+    // so treat `xhigh` as an alias for `max` on input.
+    #[serde(alias = "xhigh")]
     Max,
 }
 
